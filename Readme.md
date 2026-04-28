@@ -43,7 +43,7 @@ The bot connects to multiple exchanges (Bybit & KuCoin), processes real-time ord
 ---
 
 ## Project Structure
-```bash
+
 
 Cross Exchange Trading Bot/
 │
@@ -86,7 +86,7 @@ Cross Exchange Trading Bot/
 ├── .gitignore
 └── README.md
 
-```bash
+
 ---
 
 
@@ -486,12 +486,12 @@ This module ensures that the system can recover gracefully from crashes or resta
 
 ### Dashboard View
 <p align="center">
-  <img src="dashboard.png" width="800"/>
+  <img src="screenshots/dashboard.png" width="800"/>
 </p>
 
 ### Live Trading View
 <p align="center">
-  <img src="live.png" width="800"/>
+  <img src="screenshots/live.png" width="800"/>
 </p>
 
 
