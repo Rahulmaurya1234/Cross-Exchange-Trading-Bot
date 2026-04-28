@@ -486,12 +486,12 @@ This module ensures that the system can recover gracefully from crashes or resta
 
 ### Dashboard View
 <p align="center">
-  <img src="screenshots/dashboard.png" width="800"/>
+  <img src="Screenshot/dashboard.png" width="800"/>
 </p>
 
 ### Live Trading View
 <p align="center">
-  <img src="screenshots/live.png" width="800"/>
+  <img src="Screenshot/live.png" width="800"/>
 </p>
 
 
