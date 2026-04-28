@@ -1,0 +1,16 @@
+.card{
+background:rgba(255,255,255,0.05);
+padding:20px 35px;
+border-radius:15px;
+backdrop-filter:blur(10px);
+border:1px solid rgba(255,255,255,0.08);
+}
+
+.card h3{
+font-size:22px;
+}
+
+.card p{
+font-size:14px;
+color:#9f9f9f;
+}

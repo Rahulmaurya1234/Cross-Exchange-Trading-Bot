@@ -1,0 +1,142 @@
+.logo{
+display:flex;
+align-items:center;
+gap:10px;
+font-weight:600;
+font-size:18px;
+}
+
+/* logo icon */
+
+.logo-icon{
+width:34px;
+height:34px;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+background:linear-gradient(135deg,#19c37d,#00e1ff);
+
+border-radius:8px;
+
+font-weight:bold;
+
+box-shadow:0 0 10px rgba(0,225,255,0.6);
+}
+
+.logo-text{
+letter-spacing:1px;
+}
+
+.navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:20px 60px;
+
+background:#070b12;
+color:white;
+
+/* navbar thoda floating lage */
+box-shadow:0 4px 20px rgba(0,0,0,0.4);
+}
+
+.nav-links{
+display:flex;
+gap:30px;
+list-style:none;
+}
+
+.nav-links li{
+cursor:pointer;
+color:#cfcfcf;
+transition:0.3s;
+}
+
+.nav-links li:hover{
+color:white;
+}
+
+/* buttons container */
+.nav-buttons{
+display:flex;
+gap:15px;
+}
+.nav-links a{
+text-decoration:none;
+color:#cfcfcf;
+transition:0.3s;
+}
+
+.nav-links a:hover{
+color:white;
+}
+
+.logo-text{
+text-decoration:none;
+color:white;
+font-weight:600;
+}
+
+/* login button */
+
+.login-btn{
+background:rgba(255,255,255,0.05);
+border:1px solid rgba(255,255,255,0.15);
+color:white;
+
+padding:10px 22px;
+
+/* pill shape */
+border-radius:50px;
+
+/* soft shadow */
+box-shadow:0 4px 15px rgba(0,0,0,0.4);
+
+cursor:pointer;
+transition:0.3s;
+}
+
+/* hover effect */
+
+.login-btn:hover{
+background:rgba(255,255,255,0.1);
+transform:translateY(-2px);
+}
+
+/* start button */
+
+.start-btn{
+background:linear-gradient(
+135deg,
+#19c37d,
+#00e1ff
+);
+
+border:none;
+color:white;
+
+padding:10px 24px;
+
+/* round button */
+border-radius:50px;
+
+/* glow shadow */
+box-shadow:
+0 4px 15px rgba(0,0,0,0.4),
+0 0 15px rgba(25,195,125,0.5);
+
+cursor:pointer;
+
+transition:0.3s;
+}
+
+/* hover animation */
+
+.start-btn:hover{
+transform:translateY(-3px);
+box-shadow:
+0 6px 20px rgba(0,0,0,0.5),
+0 0 20px rgba(25,195,125,0.8);
+}

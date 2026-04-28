@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Runtime Settings</title>
+
+<style>
+body {
+    background: #0b0f1c;
+    font-family: Arial, sans-serif;
+    color: #fff;
+    margin: 0;
+    padding: 30px;
+}
+
+h1 {
+    text-align: center;
+    color: #00f5c4;
+    margin-bottom: 30px;
+}
+
+.card {
+    background: #141b2d;
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+}
+
+.section-title {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #4da6ff;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+label {
+    font-size: 13px;
+    color: #aaa;
+}
+
+input {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    background: #0f1628;
+    border: 1px solid #1f2a44;
+    color: white;
+    border-radius: 6px;
+}
+
+.small {
+    font-size: 11px;
+    color: #888;
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.save-btn {
+    background: #00c853;
+    color: white;
+}
+
+.back-btn {
+    background: #1f2a44;
+    color: white;
+}
+
+.status-bar {
+    margin-top: 10px;
+    font-size: 13px;
+}
+
+.success { color: #00ff88; }
+.error { color: #ff4d4d; }
+</style>
+</head>
+
+<body>
+
+<h1>⚙ Runtime Settings Panel</h1>
+
+<div class="card">
+    <div class="section-title">📊 Trade Limits</div>
+    <div class="grid">
+        <div>
+            <label>Max Active Trades</label>
+            <input id="max_active_trades" type="number" min="1" max="20">
+            <div class="small">Allowed: 1 - 20</div>
+        </div>
+
+        <div>
+            <label>Cooldown (seconds)</label>
+            <input id="cooldown_seconds" type="number" min="0" max="3600">
+            <div class="small">Allowed: 0 - 3600</div>
+        </div>
+
+        <div>
+            <label>Time Remaining To Fund (sec)</label>
+            <input id="time_remained_to_fund" type="number" min="0" max="86400">
+            <div class="small">Allowed: 0 - 86400</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">🛡 Risk Controls</div>
+    <div class="grid">
+        <div>
+            <label>Max Divergence Exit</label>
+            <input id="max_divergence_exit" type="number" step="0.001" min="0" max="1">
+            <div class="small">Decimal value (e.g. 0.03 = 3%)</div>
+        </div>
+
+        <div>
+            <label>Min Liquidation Buffer</label>
+            <input id="min_liq_buffer" type="number" step="0.01" min="0" max="1">
+            <div class="small">Decimal value (e.g. 0.20 = 20%)</div>
+        </div>
+
+        <div>
+            <label>Min Funding Difference</label>
+            <input id="min_funding_diff" type="number" step="0.00001" min="0" max="1">
+            <div class="small">Decimal value</div>
+        </div>
+
+        <div>
+            <label>Max Margin Usage %</label>
+            <input id="max_margin_usage_percent" type="number" step="0.01" min="0.01" max="1">
+            <div class="small">Decimal value (e.g. 0.40 = 40%)</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">⚡ Leverage (New Entries Only)</div>
+    <div class="grid">
+        <div>
+            <label>Leverage</label>
+            <input id="leverage" type="number" min="1" max="100">
+            <div class="small">Allowed: 1 - 100 (affects new trades only)</div>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="text-align:center;">
+    <button class="save-btn" id="save_btn">Save Settings</button>
+    <button class="back-btn" onclick="window.location.href='/'">Back to Dashboard</button>
+    <div class="status-bar" id="status_bar"></div>
+</div>
+
+<script>
+let ws = new WebSocket(
+    (location.protocol === "https:" ? "wss://" : "ws://")
+    + location.host + "/ws"
+);
+
+// Global suspend timestamp (ms since epoch). While now < suspendUpdatesUntil, incoming updates are ignored.
+let suspendUpdatesUntil = 0;
+// milliseconds to suspend when a user focuses/edits a field (extend while typing)
+const USER_EDIT_SUSPEND_MS = 5000; // 5s after last edit
+// how long to suspend while waiting for save ack
+const SAVE_WAIT_SUSPEND_MS = 8000; // 8s
+
+// List of all runtime input ids (keeps code tidy)
+const RUNTIME_FIELDS = [
+  "max_active_trades",
+  "cooldown_seconds",
+  "time_remained_to_fund",
+  "max_divergence_exit",
+  "min_liq_buffer",
+  "min_funding_diff",
+  "leverage",
+  "max_margin_usage_percent",
+];
+
+// helper to set suspend window to now + ms
+function extendSuspend(ms) {
+    suspendUpdatesUntil = Math.max(suspendUpdatesUntil, Date.now() + ms);
+}
+
+// safeUpdateField now respects the global suspend flag too
+function safeUpdateField(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    // If globally suspended, do not overwrite any field
+    if (Date.now() < suspendUpdatesUntil) return;
+
+    // Only update if user is NOT currently editing this field
+    if (document.activeElement !== el) {
+        el.value = (value === undefined || value === null) ? "" : String(value);
+    }
+}
+
+/* ------------- attach focus/input listeners to implement global suspend ------------- */
+RUNTIME_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    // On focus, suspend global updates while user interacts
+    el.addEventListener("focus", () => {
+        extendSuspend(USER_EDIT_SUSPEND_MS);
+    });
+
+    // On input (typing / changing), extend suspend so server pushes don't stomp while typing
+    el.addEventListener("input", () => {
+        extendSuspend(USER_EDIT_SUSPEND_MS);
+    });
+
+    // On blur, keep the short suspend (USER_EDIT_SUSPEND_MS) so small mouse/keyboard gaps don't cause overwrite
+    el.addEventListener("blur", () => {
+        extendSuspend(USER_EDIT_SUSPEND_MS);
+    });
+});
+
+/* -------- WebSocket incoming runtime config handling -------- */
+ws.onmessage = function(event) {
+    try {
+        const data = JSON.parse(event.data);
+        if (!data || !data.runtime_config) return;
+        const r = data.runtime_config;
+
+        // Debug: uncomment to trace incoming pushes
+        // console.debug("WS runtime_config push:", r, "suspendedUntil:", new Date(suspendUpdatesUntil).toISOString());
+
+        safeUpdateField("max_active_trades", r.max_active_trades);
+        safeUpdateField("cooldown_seconds", r.cooldown_seconds);
+        safeUpdateField("time_remained_to_fund", r.time_remained_to_fund);
+        safeUpdateField("max_divergence_exit", r.max_divergence_exit);
+        safeUpdateField("min_liq_buffer", r.min_liq_buffer);
+        safeUpdateField("min_funding_diff", r.min_funding_diff);
+        safeUpdateField("leverage", r.leverage);
+        safeUpdateField("max_margin_usage_percent", r.max_margin_usage_percent);
+    } catch (err) {
+        console.error("Failed to parse ws message:", err, event.data);
+    }
+};
+
+/* -------- SAVE BUTTON (improved validation + suspend until ack) -------- */
+document.getElementById("save_btn").onclick = async function() {
+    const status = document.getElementById("status_bar");
+
+    // build payload with validation and fallback
+    function safeInt(elId, min=null, max=null) {
+        const el = document.getElementById(elId);
+        if (!el) return null;
+        const v = parseInt(el.value);
+        if (isNaN(v)) return null;
+        if (min !== null && v < min) return null;
+        if (max !== null && v > max) return null;
+        return v;
+    }
+    function safeFloat(elId, min=null, max=null) {
+        const el = document.getElementById(elId);
+        if (!el) return null;
+        const v = parseFloat(el.value);
+        if (isNaN(v)) return null;
+        if (min !== null && v < min) return null;
+        if (max !== null && v > max) return null;
+        return v;
+    }
+
+    const payload = {
+        max_active_trades: safeInt("max_active_trades", 1, 20),
+        cooldown_seconds: safeInt("cooldown_seconds", 0, 3600),
+        time_remained_to_fund: safeInt("time_remained_to_fund", 0, 86400),
+        max_divergence_exit: safeFloat("max_divergence_exit", 0, 1),
+        min_liq_buffer: safeFloat("min_liq_buffer", 0, 1),
+        min_funding_diff: safeFloat("min_funding_diff", 0, 1),
+        leverage: safeInt("leverage", 1, 100),
+        max_margin_usage_percent: safeFloat("max_margin_usage_percent", 0.01, 1),
+    };
+
+    // minor client validation: at least one non-null value (otherwise nothing to save)
+    const hasAny = Object.values(payload).some(v => v !== null);
+    if (!hasAny) {
+        status.innerText = "No valid values to save (check inputs)";
+        status.className = "status-bar error";
+        return;
+    }
+
+    // suspend incoming updates while save is in-flight (and a bit after)
+    extendSuspend(SAVE_WAIT_SUSPEND_MS);
+
+    try {
+        const resp = await fetch("/update-runtime", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload),
+        });
+
+        // release suspend only after server ack or timeout; but keep minimal still
+        if (!resp.ok) {
+            const text = await resp.text().catch(()=>null);
+            status.innerText = "Update failed: " + (text || resp.status);
+            status.className = "status-bar error";
+            console.error("update-runtime failed:", resp.status, text);
+            return;
+        }
+
+        const json = await resp.json().catch(()=>null);
+        status.innerText = (json && json.message) ? json.message : "Settings updated successfully";
+        status.className = "status-bar success";
+
+        // Optionally extend suspend a little more to let server broadcast to all clients
+        extendSuspend(2000);
+
+    } catch (err) {
+        console.error("Update failed", err);
+        status.innerText = "Update failed (network)";
+        status.className = "status-bar error";
+    }
+};
+</script>
+
+</body>
+</html>

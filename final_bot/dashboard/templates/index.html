@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Trading Control Center — Pro</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root{
+    --bg:#071025;
+    --card:#0f1a2b;
+    --muted:#9fb0c8;
+    --accent:#00f5c4;
+    --danger:#ff4d4d;
+    --warn:#ffc107;
+    --good:#00ff88;
+    --info:#4da6ff;
+    --glass: rgba(255,255,255,0.03);
+    --card-pad:14px;
+    --radius:12px;
+    --mono: "Courier New", monospace;
+  }
+
+  html,body {height:100%;margin:0;background:var(--bg);color:#e6f0f6;font-family:Inter, Arial, sans-serif;}
+  .wrap{max-width:1200px;margin:18px auto;padding:18px;}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  header h1{margin:0;font-size:20px;color:var(--accent);display:flex;gap:10px;align-items:center}
+  .controls{display:flex;gap:8px;align-items:center}
+  .btn{
+    background:var(--card);
+    border:1px solid rgba(255,255,255,0.03);
+    color:#fff;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:600;
+  }
+  .btn.critical{background:linear-gradient(90deg,#b00020,#880012);border-color:rgba(255,0,0,0.15)}
+  .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.04)}
+  .status-pill{padding:6px 10px;border-radius:999px;font-weight:700;letter-spacing:0.6px}
+  .status-enabled{background:rgba(0,197,83,0.14);color:var(--good)}
+  .status-disabled{background:rgba(255,77,77,0.12);color:var(--danger)}
+
+  /* top metrics */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .metric{background:var(--card);padding:12px;border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,0.4)}
+  .metric .label{font-size:12px;color:var(--muted)}
+  .metric .value{font-size:18px;font-weight:700;margin-top:6px}
+
+  /* Active trades area */
+  .section{background:var(--card);padding:16px;border-radius:12px;margin-bottom:16px}
+  .section h2{margin:0 0 10px 0;font-size:16px;color:var(--accent)}
+
+  .trades-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+  .trade-card{background:linear-gradient(180deg, rgba(255,255,255,0.02), var(--glass));padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 6px 24px rgba(0,0,0,0.5);}
+
+  .trade-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .trade-symbol{font-weight:800;font-size:14px}
+  .meta-small{font-size:12px;color:var(--muted)}
+
+  .exchange-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+  .exchange-box{background:rgba(255,255,255,0.01);padding:10px;border-radius:8px}
+  .exchange-box .title{font-weight:700;font-size:13px;margin-bottom:6px}
+  .kv{display:flex;justify-content:space-between;font-size:13px;margin:3px 0}
+  .kv .v{font-weight:700}
+
+  .combined-box{background:rgba(255,255,255,0.02);padding:10px;border-radius:8px}
+  .risk-line{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+
+  .chip{padding:6px 8px;border-radius:999px;background:rgba(255,255,255,0.02);font-size:12px}
+  .pill{padding:6px 10px;border-radius:999px;font-weight:700}
+
+  /* exposure bar */
+  .exposure-bar{height:10px;background:rgba(255,255,255,0.03);border-radius:999px;margin-top:8px;overflow:hidden}
+  .exposure-fill{height:100%;transition:width 250ms ease}
+
+  /* closed & opportunities */
+  .mini-table{width:100%;border-collapse:collapse;font-size:13px}
+  .mini-table th, .mini-table td{padding:8px 6px;text-align:left;border-bottom:1px dashed rgba(255,255,255,0.03)}
+  .small-muted{font-size:12px;color:var(--muted)}
+
+  footer.small{font-size:12px;color:var(--muted);margin-top:10px;text-align:center}
+  .flex-row{display:flex;gap:8px;align-items:center}
+  .danger{color:var(--danger)}
+  .good{color:var(--good)}
+  .warn{color:var(--warn)}
+  .info{color:var(--info)}
+
+  .opps-table th {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #9fb3ff;
+}
+
+.opps-table td {
+    font-size: 13px;
+}
+
+.opps-table td:nth-child(n+2) {
+    text-align: right;
+}
+
+.opps-table tr:hover {
+    background: #1a243a;
+}
+
+.opps-table {
+    border-spacing: 0;
+    border-collapse: collapse;
+}
+
+.opps-table th, .opps-table td {
+    border-bottom: 1px solid #1f2a44;
+}
+
+  #opps_table td:nth-child(n+2) {
+    text-align: right;
+  }
+
+  /* responsive */
+  @media (max-width:720px){
+    .metrics{grid-template-columns:repeat(2,1fr)}
+    .exchange-row{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🚀 Trading Control Center</h1>
+    <div class="controls">
+      <div id="entry_status" class="status-pill status-disabled">UNKNOWN</div>
+      <button id="toggle_btn" class="btn">Toggle Entry</button>
+      <button id="settings_btn" class="btn secondary">⚙ Settings</button>
+      <button id="kill_btn" class="btn critical">🚨 KILL ALL</button>
+    </div>
+  </header>
+
+  <div class="metrics" id="top_metrics">
+    <div class="metric">
+      <div class="label">Bybit Balance</div>
+      <div class="value" id="bybit_balance">—</div>
+      <div class="small-muted">available balance</div>
+    </div>
+    <div class="metric">
+      <div class="label">Kucoin Balance</div>
+      <div class="value" id="kucoin_balance">—</div>
+      <div class="small-muted">available balance</div>
+    </div>
+    <div class="metric">
+      <div class="label">Total Funding Edge (sum)</div>
+      <div class="value" id="total_edge">—</div>
+      <div class="small-muted">live sum of funding diffs</div>
+    </div>
+    <div class="metric">
+      <div class="label">Avg Interval (hr)</div>
+      <div class="value" id="avg_interval">—</div>
+      <div class="small-muted">average funding interval</div>
+    </div>
+  </div>
+
+  <div class="section" id="health_section">
+  <h2>🩺 System Health</h2>
+  <div class="metrics" style="grid-template-columns: repeat(5, 1fr);">
+    <div class="metric">
+      <div class="label">Server</div>
+      <div class="value" id="health_ok">—</div>
+    </div>
+    <div class="metric">
+      <div class="label">Live Data</div>
+      <div class="value" id="health_live">—</div>
+    </div>
+    <div class="metric">
+      <div class="label">Active Trades</div>
+      <div class="value" id="health_active">—</div>
+    </div>
+    <div class="metric">
+      <div class="label">Closed Trades</div>
+      <div class="value" id="health_closed">—</div>
+    </div>
+    <div class="metric">
+      <div class="label">Entry Allowed</div>
+      <div class="value" id="health_entry">—</div>
+    </div>
+  </div>
+</div>
+
+  <section class="section">
+    <h2>🔥 Active Trades</h2>
+    <div class="trades-grid" id="active_trades_container">
+      <!-- cards injected here -->
+    </div>
+    <div class="small-muted" style="margin-top:8px">Tip: Click a trade card to highlight it (future: drilldown controls)</div>
+  </section>
+
+  <section class="section">
+    <h2>✅ Closed Trades</h2>
+    <table class="mini-table" id="closed_table">
+      <thead>
+        <tr><th>Symbol</th><th>PnL</th><th>Fees</th><th>Duration (s)</th><th>Exit</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="section">
+    <h2>📊 Top Opportunities (display-only)</h2>
+    <table class="mini-table opps-table" id="opps_table">
+      <thead>
+      <tr>
+        <th>Symbol</th>
+        <th>Fund Diff</th>
+        <th>Ku Fund</th>
+        <th>Bb Fund</th>
+        <th>Funding ⏳</th>
+        <th>Ku Mark</th>
+        <th>Bb Mark</th>
+        <th>Ku Bid/Ask</th>
+        <th>Bb Bid/Ask</th>
+        <th>Ku Min</th>
+        <th>Bb Min</th>
+        <th>Ku Mult</th>
+        <th>Bb Mult</th>
+        <th>Ku Fees</th>
+        <th>Bb Fees</th>
+        <th>Interval</th>
+      </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <footer class="small">Dashboard — connected to backend snapshot websocket / shows thresholds from runtime_config</footer>
+</div>
+
+<script>
+/* -----------------------
+   Safe helpers
+   ----------------------- */
+function safe(obj, path, def = null) {
+  try {
+    return path.split(".").reduce((o,k)=>o && o[k] !== undefined ? o[k] : undefined, obj) ?? def;
+  } catch(e){ return def; }
+}
+
+function fmt(x, digits=4) {
+  if (x === null || x === undefined) return "—";
+
+  const num = Number(x);
+  if (isNaN(num)) return "—";
+
+  if (Math.abs(num) >= 1)
+    return num.toFixed(3);
+
+  if (Math.abs(num) >= 0.01)
+    return num.toFixed(4);
+
+  if (Math.abs(num) >= 0.0001)
+    return num.toFixed(6);
+
+  return num.toExponential(2);
+}
+function clsBy(val) {
+  if (val === null || val === undefined) return "";
+  if (val > 0) return "good";
+  if (val < 0) return "danger";
+  return "";
+}
+
+/* -----------------------
+   Build trade cards
+   ----------------------- */
+
+function pct(x, digits=3){
+  if (x === null || x === undefined) return "—";
+  const num = Number(x);
+  if (isNaN(num)) return "—";
+  return (num*100).toFixed(digits) + "%";
+}
+
+function createTradeCard(t, runtime_config) {
+  // t has: symbol, status, created_at, trade_id, exchange_long, exchange_short, combined
+  const el = document.createElement("div");
+  el.className = "trade-card";
+  el.tabIndex = 0;
+  el.dataset.symbol = t.symbol;
+
+  // Header
+  const header = document.createElement("div");
+  header.className = "trade-header";
+  const symbolEl = document.createElement("div");
+  symbolEl.className = "trade-symbol";
+  symbolEl.innerText = t.symbol + "  ";
+  const metaEl = document.createElement("div");
+  metaEl.className = "meta-small";
+  metaEl.innerHTML = `<span style="margin-right:8px">${t.status}</span> <span>id:${t.trade_id?.slice(0,6) ?? "—"}</span>`;
+  header.appendChild(symbolEl);
+  header.appendChild(metaEl);
+
+  // Exchange row
+  const exchangeRow = document.createElement("div");
+  exchangeRow.className = "exchange-row";
+
+  // Long box
+  const longBox = document.createElement("div");
+  longBox.className = "exchange-box";
+  const longTitle = document.createElement("div");
+  longTitle.className = "title";
+  longTitle.innerText = "LONG (" + (t.exchange_long.exchange || "?") + ")";
+  longBox.appendChild(longTitle);
+
+  const lstatic = t.exchange_long.static || {};
+  const ldyn = t.exchange_long.dynamic || {};
+  const lderived = t.exchange_long.derived || {};
+
+  [
+    ["Entry", lstatic.entry_price],
+    ["Mark", ldyn.mark_price],
+    ["Size", ldyn.size],
+    ["Unrealized", ldyn.unrealized_pnl],
+    ["P&L %", lderived.pnl_percent ? (Number(lderived.pnl_percent)*100).toFixed(2) + "%" : null],
+    ["Liq Buffer", lderived.liquidation_buffer_percent]
+  ].forEach(([k,v])=>{
+    const kv = document.createElement("div"); kv.className = "kv";
+    const kEl = document.createElement("div"); kEl.innerText = k; kEl.className="small-muted";
+    const vEl = document.createElement("div"); vEl.innerText = (v === undefined || v === null) ? "—" : (typeof v === "number" ? fmt(v) : v);
+    vEl.className = "v";
+    kv.appendChild(kEl); kv.appendChild(vEl); longBox.appendChild(kv);
+  });
+
+  // Short box
+  const shortBox = document.createElement("div");
+  shortBox.className = "exchange-box";
+  const shortTitle = document.createElement("div");
+  shortTitle.className = "title";
+  shortTitle.innerText = "SHORT (" + (t.exchange_short.exchange || "?") + ")";
+  shortBox.appendChild(shortTitle);
+
+  const rstatic = t.exchange_short.static || {};
+  const rdyn = t.exchange_short.dynamic || {};
+  const rderived = t.exchange_short.derived || {};
+
+  [
+    ["Entry", rstatic.entry_price],
+    ["Mark", rdyn.mark_price],
+    ["Size", rdyn.size],
+    ["Unrealized", rdyn.unrealized_pnl],
+    ["P&L %", rderived.pnl_percent ? (Number(rderived.pnl_percent)*100).toFixed(2) + "%" : null],
+    ["Liq Buffer", rderived.liquidation_buffer_percent]
+  ].forEach(([k,v])=>{
+    const kv = document.createElement("div"); kv.className = "kv";
+    const kEl = document.createElement("div"); kEl.innerText = k; kEl.className="small-muted";
+    const vEl = document.createElement("div"); vEl.innerText = (v === undefined || v === null) ? "—" : (typeof v === "number" ? fmt(v) : v);
+    vEl.className = "v";
+    kv.appendChild(kEl); kv.appendChild(vEl); shortBox.appendChild(kv);
+  });
+
+  exchangeRow.appendChild(longBox);
+  exchangeRow.appendChild(shortBox);
+
+  // Combined
+  const combinedBox = document.createElement("div");
+  combinedBox.className = "combined-box";
+
+  const cstat = t.combined.static || {};
+  const cdyn = t.combined.dynamic || {};
+  const crisk = t.combined.risk || {};
+
+  // static row
+  const staticRow = document.createElement("div");
+  staticRow.className = "flex-row";
+  staticRow.style.gap="12px";
+  staticRow.innerHTML = `
+    <div class="chip">entry_fund_diff: <strong style="margin-left:6px">${fmt(cstat.entry_funding_difference)}</strong></div>
+    <div class="chip">entry_div: <strong style="margin-left:6px">${pct(cstat.entry_divergence_percent,3)}</strong></div>
+    <div class="chip">dominant: <strong style="margin-left:6px">${cstat.dominant_exchange ?? "—"}</strong></div>
+  `;
+
+  // dynamic row
+  const dynTable = document.createElement("div");
+  dynTable.style.marginTop = "8px";
+  dynTable.innerHTML = `
+    <div class="kv"><div class="small-muted">Funding diff</div><div class="v">${fmt(cdyn.funding_difference)}</div></div>
+    <div class="kv"><div class="small-muted">Divergence</div><div class="v">${pct(cdyn.current_divergence_percent,4)} <span style="margin-left:8px;color:var(--muted)">/ limit ${pct(crisk.divergence_limit,4)}</span></div></div>
+    <div class="kv"><div class="small-muted">Total Unrealized</div><div class="v ${clsBy(cdyn.total_unrealized_pnl)}">${fmt(cdyn.total_unrealized_pnl)}</div></div>
+    <div class="kv"><div class="small-muted">PnL Imbalance</div><div class="v">${fmt(cdyn.pnl_difference)}</div></div>
+    <div class="kv"><div class="small-muted">Exposure Drift (base)</div><div class="v">${fmt(cdyn.exposure_drift_base)} <span style="margin-left:8px;color:var(--muted)">/ tol ${fmt(crisk.exposure_tolerance)}</span></div></div>
+  `;
+
+  // exposure visual
+  const exposureWrap = document.createElement("div");
+  exposureWrap.className = "exposure-bar";
+  // compute fill %
+  let tol = Math.abs(crisk.exposure_tolerance||1) || 1;
+  // map drift to percent of tolerance (clamped)
+  const fill = Math.min(100, Math.abs((cdyn.exposure_drift_base || 0) / (crisk.exposure_tolerance||1) * 100));
+  const fillEl = document.createElement("div");
+  fillEl.className = "exposure-fill";
+  fillEl.style.width = fill + "%";
+  // color depending on sign
+  let fillColor = "linear-gradient(90deg,#00ff88,#00c853)";
+  if (cdyn.exposure_drift_base > 0) fillColor = "linear-gradient(90deg,#00ff88,#00c853)";
+  if (cdyn.exposure_drift_base < 0) fillColor = "linear-gradient(90deg,#4da6ff,#17406b)";
+  if (Math.abs(cdyn.exposure_drift_base) > crisk.exposure_tolerance) fillColor = "linear-gradient(90deg,#ff4d4d,#b00020)";
+  fillEl.style.background = fillColor;
+  exposureWrap.appendChild(fillEl);
+
+  // risk chips
+  const riskRow = document.createElement("div");
+  riskRow.className = "risk-line";
+
+  // divergence breached
+  const divChip = document.createElement("div");
+  divChip.className = "chip";
+  if (crisk.divergence_breached) { divChip.innerHTML = `<span class="danger">Divergence BREACHED</span>` }
+  else { divChip.innerHTML = `Divergence OK` }
+  riskRow.appendChild(divChip);
+
+  // liq buffers per exchange (get them from derived sections)
+  const longLiq = safe(t.exchange_long.derived,'liquidation_buffer_percent',null);
+  const shortLiq = safe(t.exchange_short.derived,'liquidation_buffer_percent',null);
+  const liqChip = document.createElement("div");
+  liqChip.className="chip";
+  liqChip.innerHTML = `Liq: long ${pct(longLiq)} / short ${pct(shortLiq)} <span style="margin-left:8px;color:var(--muted)">min ${fmt(crisk.liq_buffer_limit)}</span>`;
+  riskRow.appendChild(liqChip);
+
+  combinedBox.appendChild(staticRow);
+  combinedBox.appendChild(dynTable);
+  combinedBox.appendChild(exposureWrap);
+  combinedBox.appendChild(riskRow);
+
+  // Assemble
+  el.appendChild(header);
+  el.appendChild(exchangeRow);
+  el.appendChild(combinedBox);
+
+  // click highlight
+  el.onclick = ()=> {
+    document.querySelectorAll(".trade-card").forEach(c=>c.style.boxShadow="0 6px 24px rgba(0,0,0,0.5)");
+    el.style.boxShadow = "0 8px 38px rgba(0,0,0,0.8), 0 0 0 3px rgba(0,197,83,0.06)";
+    // future: open control panel / detailed modal
+  };
+
+  return el;
+}
+
+/* -----------------------
+   WebSocket + rendering
+   ----------------------- */
+let latestSnapshot = null;
+const ws = new WebSocket((location.protocol==="https:"?"wss://":"ws://") + location.host + "/ws");
+
+ws.onopen = ()=> console.info("ws open");
+ws.onclose = ()=> console.warn("ws closed");
+ws.onerror = (e)=> console.error("ws error", e);
+
+ws.onmessage = function(ev) {
+  try {
+    const data = JSON.parse(ev.data);
+    latestSnapshot = data;
+    renderSnapshot(data);
+  } catch (e) {
+    console.error("parse err", e);
+  }
+};
+
+function renderSnapshot(data) {
+  // Entry UI
+  updateEntryUI(data.entry_allowed);
+
+  // top metrics
+  const bybal = safe(data,'balances.bybit.available_balance','—');
+  const kubal = safe(data,'balances.kucoin.available_balance','—');
+  document.getElementById("bybit_balance").innerText = (bybal==="—")? "—" : fmt(bybal);
+  document.getElementById("kucoin_balance").innerText = (kubal==="—")? "—" : fmt(kubal);
+  document.getElementById("total_edge").innerText = fmt(safe(data,'metrics.total_edge',0));
+  document.getElementById("avg_interval").innerText = fmt(safe(data,'metrics.avg_interval',0));
+
+  // Active trades
+  const container = document.getElementById("active_trades_container");
+  container.innerHTML = "";
+  const runtime_config = data.runtime_config || {};
+  (data.active_trades || []).forEach(tr => {
+    const card = createTradeCard(tr, runtime_config);
+    container.appendChild(card);
+  });
+
+  // Closed
+  const closedBody = document.querySelector("#closed_table tbody");
+  closedBody.innerHTML = "";
+  (data.closed_trades || []).slice().reverse().forEach(ct=>{
+    const dur = (ct.closed_at && ct.created_at) ? Math.round(ct.closed_at - ct.created_at) : "—";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${ct.symbol}</td>
+      <td class="${clsBy(ct.realized_pnl)}">${fmt(ct.realized_pnl)}</td>
+      <td>${fmt(ct.total_fees)}</td>
+      <td>${dur}</td>
+      <td class="small-muted">${ct.exit_reason ?? "—"}</td>`;
+    closedBody.appendChild(tr);
+  });
+
+  // Opportunities (display only)
+   // Opportunities — enriched view with freshness + coloring
+  const opps = document.querySelector("#opps_table tbody");
+  opps.innerHTML = "";
+  (data.opportunities || []).slice(0,200).forEach(o=>{
+    const ku_bidask = (o.ku_bid && o.ku_ask) ? `${fmt(o.ku_bid)} / ${fmt(o.ku_ask)}` : "—";
+    const bb_bidask = (o.bb_bid && o.bb_ask) ? `${fmt(o.bb_bid)} / ${fmt(o.bb_ask)}` : "—";
+    const ku_fees = (o.ku_fee_maker || o.ku_fee_taker) ? `${fmt(o.ku_fee_maker)} / ${fmt(o.ku_fee_taker)}` : "—";
+    const bb_fees = (o.bb_fee_maker || o.bb_fee_taker) ? `${fmt(o.bb_fee_maker)} / ${fmt(o.bb_fee_taker)}` : "—";
+
+
+    // funding diff coloring using runtime_config.min_funding_diff (if present)
+    const minFund = safe(data, "runtime_config.min_funding_diff", 0.00005);
+    const threshold = safe(data, "runtime_config.time_remained_to_fund", 0);
+
+    let countdownClass = "";
+    if (o.time_to_funding != null && threshold > 0) {
+        if (o.time_to_funding > threshold * 1.5)
+            countdownClass = "good";
+        else if (o.time_to_funding > threshold)
+            countdownClass = "warn";
+        else
+            countdownClass = "danger";
+    }
+    let fundingClass = "";
+    if (o.funding_diff == null) fundingClass = "";
+    else if (o.funding_diff >= (minFund * 3)) fundingClass = "good";
+    else if (o.funding_diff >= minFund) fundingClass = "warn";
+    else fundingClass = "danger";
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${o.symbol}</td>
+      <td class="${fundingClass}">${fmt(o.funding_diff)}</td>
+      <td>${fmt(o.ku_funding)}</td>
+      <td>${fmt(o.bb_funding)}</td>
+      <td class="${countdownClass}">
+        ${o.time_to_funding ?? "—"}s
+        ${threshold > 0 ? `<span class="small-muted">/ ${threshold}s</span>` : ""}
+      </td>
+      <td>${fmt(o.ku_mark)}</td>
+      <td>${fmt(o.bb_mark)}</td>
+      <td>${ku_bidask}</td>
+      <td>${bb_bidask}</td>
+      <td>${fmt(o.ku_min_qty)}</td>
+      <td>${fmt(o.bb_min_qty)}</td>
+      <td>${fmt(o.ku_mult)}</td>
+      <td>${fmt(o.bb_mult)}</td>
+      <td>${ku_fees}</td>
+      <td>${bb_fees}</td>
+      <td>${fmt(o.interval)}</td>`;
+    opps.appendChild(tr);
+  });
+
+  // (Optional) expose runtime config somewhere in console for quick tuning
+  // console.log("runtime", data.runtime_config);
+}
+
+/* -----------------------
+   Entry toggle + kill + settings
+   ----------------------- */
+function updateEntryUI(allowed) {
+  const el = document.getElementById("entry_status");
+  if (allowed) { el.className = "status-pill status-enabled"; el.innerText = "ENABLED"; document.getElementById("toggle_btn").innerText = "Disable Entry"; }
+  else { el.className = "status-pill status-disabled"; el.innerText = "DISABLED"; document.getElementById("toggle_btn").innerText = "Enable Entry"; }
+}
+
+document.getElementById("toggle_btn").onclick = async ()=>{
+  if (!latestSnapshot) return;
+  const newState = !latestSnapshot.entry_allowed;
+  await fetch("/toggle-entry", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({allowed:newState})});
+};
+
+document.getElementById("kill_btn").onclick = async ()=>{
+  if (!confirm("KILL ALL trades? This will attempt to close every open position.")) return;
+
+  try {
+    const res = await fetch("/kill-all", {method:"POST"});
+    const data = await res.json();
+    alert("Kill executed.");
+  } catch(e) {
+    alert("Kill failed.");
+  }
+};
+
+document.getElementById("settings_btn").onclick = ()=> { window.location.href = "/settings"; };
+
+/* -----------------------
+   Small safety: try to show "disconnected" hint
+   ----------------------- */
+setInterval(()=>{
+  if (!latestSnapshot && ws.readyState !== 1) {
+    document.getElementById("entry_status").innerText = "DISCONNECTED";
+    document.getElementById("entry_status").className = "status-pill";
+  }
+},3000);
+
+// -----------------------
+// Health Polling
+// -----------------------
+
+async function fetchHealth() {
+  try {
+    const res = await fetch("/health");
+    if (!res.ok) throw new Error("health fetch failed");
+    const data = await res.json();
+    renderHealth(data);
+  } catch (e) {
+    renderHealth(null);
+  }
+}
+
+function renderHealth(data) {
+  const okEl = document.getElementById("health_ok");
+  const liveEl = document.getElementById("health_live");
+  const activeEl = document.getElementById("health_active");
+  const closedEl = document.getElementById("health_closed");
+  const entryEl = document.getElementById("health_entry");
+
+  if (!data) {
+    okEl.innerText = "DOWN";
+    okEl.className = "value danger";
+    liveEl.innerText = "—";
+    activeEl.innerText = "—";
+    closedEl.innerText = "—";
+    entryEl.innerText = "—";
+    return;
+  }
+
+  okEl.innerText = data.ok ? "OK" : "ERROR";
+  okEl.className = data.ok ? "value good" : "value danger";
+
+  liveEl.innerText = data.live_data_available ? "YES" : "NO";
+  liveEl.className = data.live_data_available ? "value good" : "value warn";
+
+  activeEl.innerText = data.active_trades_count ?? "0";
+  closedEl.innerText = data.closed_trades_count ?? "0";
+
+  entryEl.innerText = data.entry_allowed ? "ENABLED" : "DISABLED";
+  entryEl.className = data.entry_allowed ? "value good" : "value warn";
+}
+
+// poll every 4 seconds
+setInterval(fetchHealth, 4000);
+
+// also fetch once at load
+window.addEventListener("DOMContentLoaded", fetchHealth);
+
+</script>
+</body>
+</html>

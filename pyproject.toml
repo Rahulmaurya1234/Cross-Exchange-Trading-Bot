@@ -1,0 +1,18 @@
+[project]
+name = "trading-bot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiohttp>=3.13.3",
+    "asyncio>=4.0.0",
+    "cctx>=1.0.0",
+    "ccxt>=4.5.36",
+    "dotenv>=0.9.9",
+    "fastapi>=0.131.0",
+    "orjson>=3.11.7",
+    "uuid>=1.30",
+    "uvicorn>=0.41.0",
+    "websockets>=16.0",
+]

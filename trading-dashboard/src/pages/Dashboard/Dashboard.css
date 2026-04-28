@@ -1,0 +1,300 @@
+:root{
+  --bg:#0b1320;
+  --panel:#121c2f;
+  --card:#16243c;
+  --border:#243555;
+
+  --accent:#00f5c4;
+  --muted:#9fb0c8;
+
+  --good:#00ff88;
+  --warn:#ffc107;
+  --danger:#ff4d4d;
+}
+
+/* ---------- GLOBAL ---------- */
+
+body{
+  background:var(--bg);
+  color:#e6f0ff;
+  font-family:Inter, system-ui, Arial;
+  margin:0;
+}
+
+/* ---------- WRAPPER ---------- */
+
+.wrap{
+  max-width:1200px;
+  margin:auto;
+  padding:20px;
+}
+
+/* ---------- HEADER ---------- */
+
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+}
+
+header h1{
+  font-size:20px;
+  color:var(--accent);
+}
+
+/* ---------- CONTROLS ---------- */
+
+.controls{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+
+/* ---------- STATUS ---------- */
+
+.status-pill{
+  padding:6px 12px;
+  border-radius:20px;
+  font-size:12px;
+  font-weight:700;
+}
+
+.status-enabled{
+  background:#0c3c2a;
+  color:var(--good);
+}
+
+.status-disabled{
+  background:#3b0b0b;
+  color:var(--danger);
+}
+
+/* ---------- BUTTONS ---------- */
+
+.btn{
+  background:var(--card);
+  border:1px solid var(--border);
+  color:white;
+  padding:8px 14px;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:13px;
+  font-weight:600;
+  transition:all .2s;
+}
+
+.btn:hover{
+  background:#1c2f4f;
+  border-color:#3a5b9a;
+}
+
+/* Toggle */
+
+.btn.toggle{
+  background:#1a2f4d;
+}
+
+.btn.toggle:hover{
+  background:#274b7a;
+}
+
+/* Settings */
+
+.btn.settings{
+  background:transparent;
+  border:1px solid #3b4f75;
+}
+
+.btn.settings:hover{
+  background:#1c2f4f;
+}
+
+/* Kill */
+
+.btn.kill{
+  background:#5b0f1b;
+  border:1px solid #7c1426;
+}
+
+.btn.kill:hover{
+  background:#7c1426;
+}
+
+/* ---------- METRICS ---------- */
+
+.metrics{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:15px;
+  margin-bottom:20px;
+}
+
+.metric{
+  background:var(--panel);
+  border:1px solid var(--border);
+  padding:14px;
+  border-radius:8px;
+}
+
+.metric .label{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.metric .value{
+  font-size:20px;
+  font-weight:700;
+  margin-top:5px;
+}
+
+/* ---------- SECTION ---------- */
+
+.section{
+  background:var(--panel);
+  border:1px solid var(--border);
+  padding:18px;
+  border-radius:8px;
+  margin-bottom:20px;
+}
+
+.section h2{
+  font-size:16px;
+  color:var(--accent);
+  margin-bottom:12px;
+}
+
+/* ---------- TRADE GRID ---------- */
+
+.trades-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:14px;
+}
+
+/* ---------- TRADE CARD ---------- */
+
+.trade-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  padding:14px;
+  border-radius:8px;
+  transition:.2s;
+}
+
+.trade-card:hover{
+  transform:translateY(-2px);
+  border-color:#3a5b9a;
+}
+
+/* ---------- TRADE HEADER ---------- */
+
+.trade-header{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:10px;
+}
+
+.trade-symbol{
+  font-weight:700;
+  font-size:14px;
+}
+
+.meta-small{
+  font-size:12px;
+  color:var(--muted);
+}
+
+/* ---------- EXCHANGE ROW ---------- */
+
+.exchange-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+/* ---------- EXCHANGE BOX ---------- */
+
+.exchange-box{
+  background:#10192c;
+  border-radius:6px;
+  padding:10px;
+}
+
+.title{
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+
+/* ---------- KEY VALUE ---------- */
+
+.kv{
+  display:flex;
+  justify-content:space-between;
+  font-size:13px;
+  margin:3px 0;
+}
+
+/* ---------- COMBINED ---------- */
+
+.combined-box{
+  margin-top:10px;
+  background:#10192c;
+  padding:10px;
+  border-radius:6px;
+}
+
+/* ---------- TABLE ---------- */
+
+.mini-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+
+.mini-table th{
+  text-align:left;
+  padding:8px;
+  color:var(--muted);
+  border-bottom:1px solid var(--border);
+}
+
+.mini-table td{
+  padding:8px;
+  border-bottom:1px solid #1f2d47;
+}
+
+.mini-table tr:hover{
+  background:#1a2740;
+}
+
+/* ---------- COLORS ---------- */
+
+.good{
+  color:var(--good);
+}
+
+.warn{
+  color:var(--warn);
+}
+
+.danger{
+  color:var(--danger);
+}
+
+/* ---------- RESPONSIVE ---------- */
+
+@media(max-width:700px){
+
+  header{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:10px;
+  }
+
+  .exchange-row{
+    grid-template-columns:1fr;
+  }
+
+}
