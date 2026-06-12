@@ -1,4 +1,5 @@
-# Cross Exchange Trading Bot
+# Real-Time-crypto-Arbitage-Engine 
+# https://github.com/Rahulmaurya1234/Real-Time-crypto-Arbitage-Engine/tree/main
 
 A full stack algorithmic trading system that performs cross-exchange arbitrage and funding rate strategies using real-time market data. The system is built using an asynchronous architecture with a Python backend and a dashboard for real-time monitoring.
 
